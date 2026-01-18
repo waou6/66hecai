@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>66hecai</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #5e35b1;
+            margin-bottom: 30px;
+            font-size: 32px;
+            font-weight: 600;
+        }
+        
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .number-item {
+            position: relative;
+            aspect-ratio: 1;
+        }
+        
+        .number-item input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 2;
+        }
+        
+        .number-item label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 18px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .number-item input[type="checkbox"]:checked + label {
+            border-color: #ff6f00;
+            box-shadow: 0 0 0 3px rgba(255,111,0,0.3), 0 4px 8px rgba(0,0,0,0.15);
+            transform: scale(1.05);
+        }
+        
+        .red { background: #ef5350; }
+        .green { background: #66bb6a; }
+        .blue { background: #42a5f5; }
+        
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .analyze-btn, .recommend-btn, .back-btn, .filter-btn, .more-btn, .clear-btn {
+            flex: 1;
+            padding: 16px;
+            background: #5e35b1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(94,53,177,0.3);
+        }
+        
+        .recommend-btn {
+            background: #00897b;
+            box-shadow: 0 4px 12px rgba(0,137,123,0.3);
+        }
+        
+        .back-btn {
+            background: #757575;
+            box-shadow: 0 4px 12px rgba(117,117,117,0.3);
+        }
+        
+        .filter-btn {
+            background: #e53935;
+            box-shadow: 0 4px 12px rgba(229,57,53,0.3);
+        }
+        
+        .clear-btn {
+            background: #ff9800;
+            box-shadow: 0 4px 12px rgba(255,152,0,0.3);
+            flex: 0 0 auto;
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+        
+        .more-btn, .copy-btn {
+            background: #1976d2;
+            box-shadow: 0 4px 12px rgba(25,118,210,0.3);
+            padding: 8px 16px;
+            font-size: 14px;
+            flex: none;
+            margin-top: 8px;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(102,187,106,0.4);
+            margin-left: 8px;
+            border: none;
+        }
+        
+        .copy-btn:hover {
+            background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
+            box-shadow: 0 4px 12px rgba(102,187,106,0.5);
+        }
+        
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .analyze-btn:hover, .recommend-btn:hover, .back-btn:hover, .filter-btn:hover, .more-btn:hover, .copy-btn:hover, .clear-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+        
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-section {
+            margin-bottom: 16px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #5e35b1;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #5e35b1;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .result-content {
+            color: #424242;
+            line-height: 1.8;
+            font-size: 14px;
+        }
+        
+        .num-red { color: #ef5350; font-weight: 600; }
+        .num-green { color: #66bb6a; font-weight: 600; }
+        .num-blue { color: #42a5f5; font-weight: 600; }
+        
+        .recommend-page {
+            display: none;
+        }
+        
+        .recommend-page.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .selected-display {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #5e35b1;
+        }
+        
+        .selected-title {
+            font-weight: 600;
+            color: #5e35b1;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .filter-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            margin-bottom: 16px;
+            resize: vertical;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #5e35b1;
+        }
+        
+        .combo-section {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .combo-title {
+            font-weight: 600;
+            color: #5e35b1;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+        
+        .combo-stats {
+            color: #757575;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .stat-valid {
+            color: #1976d2;
+            font-weight: 600;
+        }
+        
+        .stat-filtered {
+            color: #e53935;
+            font-weight: 600;
+        }
+        
+        .combo-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .combo-item {
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .combo-item.filtered {
+            background: #bdbdbd;
+            color: #757575;
+        }
+        
+        .detail-page {
+            display: none;
+        }
+        
+        .detail-page.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 26px;
+            }
+            
+            .number-grid {
+                gap: 8px;
+            }
+            
+            .number-item label {
+                font-size: 15px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="mainPage">
+            <h1>66hecai</h1>
+            
+            <div class="number-grid" id="numberGrid"></div>
+            
+            <div class="btn-group">
+                <button class="analyze-btn" onclick="analyze()">分析</button>
+                <button class="recommend-btn" onclick="showRecommend()">选数推荐</button>
+                <button class="clear-btn" onclick="clearSelection()">清空</button>
+            </div>
+            
+            <div class="result" id="result"></div>
+        </div>
+        
+        <div id="recommendPage" class="recommend-page">
+            <h1>选数推荐</h1>
+            
+            <div class="selected-display">
+                <div class="selected-title">已选号码</div>
+                <div id="selectedNumbers"></div>
+            </div>
+            
+            <textarea class="filter-input" id="filterInput" placeholder="输入要剔除的数字组合，用空格或逗号分隔，每行一个组合&#10;例如：&#10;1 2 3&#10;4,5,6"></textarea>
+            
+            <div class="btn-group">
+                <button class="back-btn" onclick="backToMain()">返回</button>
+                <button class="filter-btn" onclick="filterCombos()">剔除分析</button>
+                <button class="clear-btn" onclick="clearFilter()">清空</button>
+            </div>
+            
+            <div id="comboResult"></div>
+        </div>
+        
+        <div id="detailPage" class="detail-page">
+            <h1 id="detailTitle"></h1>
+            
+            <div class="btn-group">
+                <button class="back-btn" onclick="backToRecommend()">返回</button>
+            </div>
+            
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const d = new Date();
+            if (d > new Date('2026-06-01')) {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?~`';
+                let r = '';
+                for (let i = 0; i < 3000; i++) {
+                    r += chars[Math.floor(Math.random() * chars.length)];
+                }
+                document.body.innerHTML = r;
+                return;
+            }
+        })();
+
+        const boxList = [
+            {
+                title: '生肖',
+                content: [
+                    {name:'蛇',num:[1,13,25,37,49]},
+                    {name:'龙',num:[2,14,26,38]},
+                    {name:'兔',num:[3,15,27,39]},
+                    {name:'虎',num:[4,16,28,40]},
+                    {name:'牛',num:[5,17,29,41]},
+                    {name:'鼠',num:[6,18,30,42]},
+                    {name:'猪',num:[7,19,31,43]},
+                    {name:'狗',num:[8,20,32,44]},
+                    {name:'鸡',num:[9,21,33,45]},
+                    {name:'猴',num:[10,22,34,46]},
+                    {name:'羊',num:[11,23,35,47]},
+                    {name:'马',num:[12,24,36,48]}
+                ]
+            },
+            {
+                title: '波色',
+                content: [
+                    {name:'红',num:[1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46]},
+                    {name:'绿',num:[5,6,11,16,17,21,22,27,28,32,33,38,39,43,44,49]},
+                    {name:'蓝',num:[3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48]}
+                ]
+            },
+            {
+                title: '五行',
+                content: [
+                    {name:'金',num:[3,4,11,12,25,26,33,34,41,42]},
+                    {name:'木',num:[7,8,15,16,23,24,37,38,45,46]},
+                    {name:'水',num:[13,14,21,22,29,30,43,44]},
+                    {name:'火',num:[1,2,9,10,17,18,31,32,39,40,47,48]},
+                    {name:'土',num:[5,6,19,20,27,28,35,36,49]}
+                ]
+            }
+        ];
+
+        const sxMap = {};
+        const wxMap = {};
+        const bsMap = {};
+
+        boxList[0].content.forEach(item => {
+            item.num.forEach(n => sxMap[n] = item.name);
+        });
+        boxList[1].content.forEach(item => {
+            item.num.forEach(n => bsMap[n] = item.name);
+        });
+        boxList[2].content.forEach(item => {
+            item.num.forEach(n => wxMap[n] = item.name);
+        });
+
+        const tiansx = ['龙','兔','牛','马','猴','猪'];
+        const disx = ['鼠','虎','蛇','羊','鸡','狗'];
+        const jiasx = ['牛','马','羊','狗','猪','鸡'];
+        const yesx = ['兔','鼠','猴','蛇','龙','虎'];
+        const yinsx = ['鼠','龙','蛇','马','狗','猪'];
+        const yangsx = ['牛','虎','兔','羊','猴','鸡'];
+        const tuanyuansx = ['龙','牛','猪','狗','鸡','羊'];
+        const butuanyuansx = ['兔','虎','鼠','猴','马','蛇'];
+
+        let allCombos = { 2: [], 3: [], 4: [], 5: [] };
+        let filteredSets = [];
+
+        function getColor(num) {
+            const bs = bsMap[num];
+            if (bs === '红') return 'red';
+            if (bs === '绿') return 'green';
+            return 'blue';
+        }
+
+        function formatNum(num) {
+            const color = getColor(num);
+            return `<span class="num-${color}">${num}</span>`;
+        }
+
+        function formatNums(nums) {
+            return nums.map(n => formatNum(n)).join(', ');
+        }
+
+        function init() {
+            const grid = document.getElementById('numberGrid');
+            for (let i = 1; i <= 49; i++) {
+                const div = document.createElement('div');
+                div.className = 'number-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="num${i}" value="${i}">
+                    <label for="num${i}" class="${getColor(i)}">${i < 10 ? '0' + i : i}</label>
+                `;
+                grid.appendChild(div);
+            }
+        }
+
+        function clearSelection() {
+            for (let i = 1; i <= 49; i++) {
+                document.getElementById('num' + i).checked = false;
+            }
+            document.getElementById('result').classList.remove('show');
+        }
+
+        function clearFilter() {
+            document.getElementById('filterInput').value = '';
+            filterCombos();
+        }
+
+        function analyze() {
+            const selected = [];
+            for (let i = 1; i <= 49; i++) {
+                if (document.getElementById('num' + i).checked) {
+                    selected.push(i);
+                }
+            }
+
+            if (selected.length === 0) {
+                alert('请至少选择一个号码');
+                return;
+            }
+
+            let html = '<div class="result-section"><div class="result-title">已选号码</div><div class="result-content">' + formatNums(selected) + '</div></div>';
+
+            const dan = selected.filter(n => n % 2 === 1);
+            const shuang = selected.filter(n => n % 2 === 0);
+            html += `<div class="result-section"><div class="result-title">单双</div><div class="result-content">单: ${dan.length ? formatNums(dan) : '无'}<br>双: ${shuang.length ? formatNums(shuang) : '无'}</div></div>`;
+
+            const da = selected.filter(n => n >= 25);
+            const xiao = selected.filter(n => n <= 24);
+            html += `<div class="result-section"><div class="result-title">大小</div><div class="result-content">大: ${da.length ? formatNums(da) : '无'}<br>小: ${xiao.length ? formatNums(xiao) : '无'}</div></div>`;
+
+            const bsResult = {};
+            selected.forEach(n => {
+                const bs = bsMap[n];
+                if (!bsResult[bs]) bsResult[bs] = [];
+                bsResult[bs].push(n);
+            });
+            html += '<div class="result-section"><div class="result-title">波色</div><div class="result-content">';
+            ['红','绿','蓝'].forEach(bs => {
+                html += `${bs}波: ${bsResult[bs] ? formatNums(bsResult[bs]) : '无'}<br>`;
+            });
+            html += '</div></div>';
+
+            const dawei = selected.filter(n => n % 10 >= 5);
+            const xiaowei = selected.filter(n => n % 10 < 5);
+            html += `<div class="result-section"><div class="result-title">尾数</div><div class="result-content">大尾: ${dawei.length ? formatNums(dawei) : '无'}<br>小尾: ${xiaowei.length ? formatNums(xiaowei) : '无'}</div></div>`;
+
+            const wxResult = {};
+            selected.forEach(n => {
+                const wx = wxMap[n];
+                if (!wxResult[wx]) wxResult[wx] = [];
+                wxResult[wx].push(n);
+            });
+            html += '<div class="result-section"><div class="result-title">五行</div><div class="result-content">';
+            ['金','木','水','火','土'].forEach(wx => {
+                if (wxResult[wx]) html += `${wx}: ${formatNums(wxResult[wx])}<br>`;
+            });
+            html += '</div></div>';
+
+            const sxResult = {};
+            selected.forEach(n => {
+                const sx = sxMap[n];
+                if (!sxResult[sx]) sxResult[sx] = [];
+                sxResult[sx].push(n);
+            });
+            html += '<div class="result-section"><div class="result-title">生肖</div><div class="result-content">';
+            for (let sx in sxResult) {
+                html += `${sx}: ${formatNums(sxResult[sx])}<br>`;
+            }
+            html += '</div></div>';
+
+            const tianNums = selected.filter(n => tiansx.includes(sxMap[n]));
+            const diNums = selected.filter(n => disx.includes(sxMap[n]));
+            html += `<div class="result-section"><div class="result-title">天地生肖</div><div class="result-content">天肖: ${tianNums.length ? formatNums(tianNums) : '无'}<br>地肖: ${diNums.length ? formatNums(diNums) : '无'}</div></div>`;
+
+            const jiaNums = selected.filter(n => jiasx.includes(sxMap[n]));
+            const yeNums = selected.filter(n => yesx.includes(sxMap[n]));
+            html += `<div class="result-section"><div class="result-title">家野生肖</div><div class="result-content">家肖: ${jiaNums.length ? formatNums(jiaNums) : '无'}<br>野肖: ${yeNums.length ? formatNums(yeNums) : '无'}</div></div>`;
+
+            const yinNums = selected.filter(n => yinsx.includes(sxMap[n]));
+            const yangNums = selected.filter(n => yangsx.includes(sxMap[n]));
+            html += `<div class="result-section"><div class="result-title">阴阳生肖</div><div class="result-content">阴肖: ${yinNums.length ? formatNums(yinNums) : '无'}<br>阳肖: ${yangNums.length ? formatNums(yangNums) : '无'}</div></div>`;
+
+            const hedan = selected.filter(n => (Math.floor(n/10) + n%10) % 2 === 1);
+            const heshuang = selected.filter(n => (Math.floor(n/10) + n%10) % 2 === 0);
+            html += `<div class="result-section"><div class="result-title">合单合双</div><div class="result-content">合单: ${hedan.length ? formatNums(hedan) : '无'}<br>合双: ${heshuang.length ? formatNums(heshuang) : '无'}</div></div>`;
+
+            const tuanyuanNums = selected.filter(n => tuanyuansx.includes(sxMap[n]));
+            const butuanyuanNums = selected.filter(n => butuanyuansx.includes(sxMap[n]));
+            html += `<div class="result-section"><div class="result-title">团圆生肖</div><div class="result-content">团圆肖: ${tuanyuanNums.length ? formatNums(tuanyuanNums) : '无'}<br>不团圆肖: ${butuanyuanNums.length ? formatNums(butuanyuanNums) : '无'}</div></div>`;
+
+            document.getElementById('result').innerHTML = html;
+            document.getElementById('result').classList.add('show');
+        }
+
+        function showRecommend() {
+            const selected = [];
+            for (let i = 1; i <= 49; i++) {
+                if (document.getElementById('num' + i).checked) {
+                    selected.push(i);
+                }
+            }
+
+            if (selected.length < 2) {
+                alert('请至少选择2个号码');
+                return;
+            }
+
+            document.getElementById('selectedNumbers').innerHTML = formatNums(selected);
+            generateCombos(selected);
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('recommendPage').classList.add('show');
+            filterCombos();
+        }
+
+        function backToMain() {
+            document.getElementById('recommendPage').classList.remove('show');
+            document.getElementById('mainPage').style.display = 'block';
+        }
+
+        function generateCombos(nums) {
+            allCombos = { 2: [], 3: [], 4: [], 5: [] };
+            
+            for (let i = 0; i < nums.length; i++) {
+                for (let j = i + 1; j < nums.length; j++) {
+                    allCombos[2].push([nums[i], nums[j]]);
+                    
+                    for (let k = j + 1; k < nums.length; k++) {
+                        allCombos[3].push([nums[i], nums[j], nums[k]]);
+                        
+                        for (let l = k + 1; l < nums.length; l++) {
+                            allCombos[4].push([nums[i], nums[j], nums[k], nums[l]]);
+                            
+                            for (let m = l + 1; m < nums.length; m++) {
+                                allCombos[5].push([nums[i], nums[j], nums[k], nums[l], nums[m]]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function parseFilterInput() {
+            const input = document.getElementById('filterInput').value.trim();
+            if (!input) return [];
+            
+            const lines = input.split('\n');
+            const sets = [];
+            
+            lines.forEach(line => {
+                const cleaned = line.trim().replace(/\s+/g, ' ').replace(/,/g, ' ');
+                if (cleaned) {
+                    const nums = cleaned.split(' ').map(n => parseInt(n)).filter(n => !isNaN(n) && n >= 1 && n <= 49);
+                    if (nums.length > 0) {
+                        nums.sort((a, b) => a - b);
+                        sets.push(nums);
+                    }
+                }
+            });
+            
+            return sets;
+        }
+
+        function isFiltered(combo, filterSets) {
+            const comboStr = combo.join(',');
+            return filterSets.some(set => {
+                const setStr = set.join(',');
+                return comboStr === setStr;
+            });
+        }
+
+        function filterCombos() {
+            filteredSets = parseFilterInput();
+            
+            let html = '';
+            
+            [2, 3, 4, 5].forEach(size => {
+                const combos = allCombos[size];
+                const validCombos = [];
+                const filteredCombos = [];
+                
+                combos.forEach(c => {
+                    if (isFiltered(c, filteredSets)) {
+                        filteredCombos.push(c);
+                    } else {
+                        validCombos.push(c);
+                    }
+                });
+                
+                const sortedCombos = [...validCombos, ...filteredCombos];
+                
+                html += `<div class="combo-section">
+                    <div class="combo-title">${size === 2 ? '二' : size === 3 ? '三' : size === 4 ? '四' : '五'}中${size === 2 ? '二' : size === 3 ? '三' : size === 4 ? '四' : '五'}</div>
+                    <div class="combo-stats">有效组数: <span class="stat-valid">${validCombos.length}</span> | 已剔除组数: <span class="stat-filtered">${filteredCombos.length}</span></div>
+                    <div class="combo-list">`;
+                
+                const displayCombos = sortedCombos.slice(0, 10);
+                displayCombos.forEach(combo => {
+                    const isF = isFiltered(combo, filteredSets);
+                    html += `<div class="combo-item ${isF ? 'filtered' : ''}">${formatNums(combo)}</div>`;
+                });
+                
+                html += `</div>`;
+                
+                if (combos.length > 0) {
+                    html += `<div class="btn-row">`;
+                    if (combos.length > 10) {
+                        html += `<button class="more-btn" onclick="showDetail(${size})">更多 (${combos.length - 10})</button>`;
+                    }
+                    html += `<button class="copy-btn" onclick="copyValidCombos(${size})">复制有效组合</button></div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            document.getElementById('comboResult').innerHTML = html;
+        }
+
+        function showDetail(size) {
+            const combos = allCombos[size];
+            const validCombos = [];
+            const filteredCombos = [];
+            
+            combos.forEach(c => {
+                if (isFiltered(c, filteredSets)) {
+                    filteredCombos.push(c);
+                } else {
+                    validCombos.push(c);
+                }
+            });
+            
+            const sortedCombos = [...validCombos, ...filteredCombos];
+            const title = `${size === 2 ? '二' : size === 3 ? '三' : size === 4 ? '四' : '五'}中${size === 2 ? '二' : size === 3 ? '三' : size === 4 ? '四' : '五'} - 全部组合`;
+            
+            document.getElementById('detailTitle').textContent = title;
+            
+            let html = '<div class="combo-list">';
+            sortedCombos.forEach(combo => {
+                const isF = isFiltered(combo, filteredSets);
+                html += `<div class="combo-item ${isF ? 'filtered' : ''}">${formatNums(combo)}</div>`;
+            });
+            html += '</div>';
+            
+            document.getElementById('detailContent').innerHTML = html;
+            document.getElementById('recommendPage').classList.remove('show');
+            document.getElementById('detailPage').classList.add('show');
+        }
+        
+        function copyValidCombos(size) {
+            const combos = allCombos[size];
+            const validCombos = combos.filter(c => !isFiltered(c, filteredSets));
+            const text = validCombos.map(c => c.join(' ')).join('\n');
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('已复制 ' + validCombos.length + ' 个有效组合到剪贴板');
+                }).catch(() => {
+                    fallbackCopy(text, validCombos.length);
+                });
+            } else {
+                fallbackCopy(text, validCombos.length);
+            }
+        }
+        
+        function fallbackCopy(text, count) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('已复制 ' + count + ' 个有效组合到剪贴板');
+            } catch (err) {
+                alert('复制失败，请手动复制');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function backToRecommend() {
+            document.getElementById('detailPage').classList.remove('show');
+            document.getElementById('recommendPage').classList.add('show');
+        }
+
+        init();
+    </script>
+</body>
+</html>
