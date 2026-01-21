@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>66hecai</title>
     <style>
         * {
@@ -33,6 +36,14 @@
             margin-bottom: 30px;
             font-size: 32px;
             font-weight: 600;
+        }
+        
+        .version {
+            text-align: center;
+            color: #9e9e9e;
+            font-size: 12px;
+            margin-top: -25px;
+            margin-bottom: 25px;
         }
         
         .number-grid {
@@ -115,6 +126,67 @@
         .filter-btn {
             background: #e53935;
             box-shadow: 0 4px 12px rgba(229,57,53,0.3);
+        }
+        
+        .cancel-btn {
+            background: #ff5722;
+            box-shadow: 0 4px 12px rgba(255,87,34,0.3);
+            display: none;
+        }
+        
+        .cancel-btn.show {
+            display: block;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-box {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #5e35b1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #424242;
+            font-size: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .loading-progress {
+            color: #757575;
+            font-size: 14px;
+            margin-bottom: 16px;
         }
         
         .clear-btn {
@@ -324,6 +396,7 @@
     <div class="container">
         <div id="mainPage">
             <h1>66hecai</h1>
+            <div class="version">v0121</div>
             
             <div class="number-grid" id="numberGrid"></div>
             
@@ -348,7 +421,8 @@
             
             <div class="btn-group">
                 <button class="back-btn" onclick="backToMain()">返回</button>
-                <button class="filter-btn" onclick="filterCombos()">剔除分析</button>
+                <button class="filter-btn" id="filterBtn" onclick="filterCombos()">剔除分析</button>
+                <button class="cancel-btn" id="cancelBtn" onclick="cancelFilter()">取消</button>
                 <button class="clear-btn" onclick="clearFilter()">清空</button>
             </div>
             
@@ -363,6 +437,15 @@
             </div>
             
             <div id="detailContent"></div>
+        </div>
+        
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-box">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">正在计算剔除结果...</div>
+                <div class="loading-progress" id="loadingProgress">处理中...</div>
+                <button class="filter-btn" onclick="cancelFilter()" style="margin-top: 10px;">取消操作</button>
+            </div>
         </div>
     </div>
 
@@ -443,6 +526,8 @@
 
         let allCombos = { 2: [], 3: [], 4: [], 5: [] };
         let filteredSets = [];
+        let filterWorker = null;
+        let isFiltering = false;
 
         function getColor(num) {
             const bs = bsMap[num];
@@ -640,17 +725,166 @@
             return sets;
         }
 
-        function isFiltered(combo, filterSets) {
-            const comboStr = combo.join(',');
-            return filterSets.some(set => {
-                const setStr = set.join(',');
-                return comboStr === setStr;
-            });
+        // 生成一组数字的所有子组合（2个及以上）
+        function generateSubCombos(nums) {
+            const subCombos = [];
+            const n = nums.length;
+            
+            // 生成所有大小为2到n的子组合
+            for (let size = 2; size <= n; size++) {
+                const indices = [];
+                for (let i = 0; i < size; i++) indices.push(i);
+                
+                while (true) {
+                    const combo = indices.map(i => nums[i]);
+                    subCombos.push(combo);
+                    
+                    let i = size - 1;
+                    while (i >= 0 && indices[i] === n - size + i) i--;
+                    if (i < 0) break;
+                    
+                    indices[i]++;
+                    for (let j = i + 1; j < size; j++) {
+                        indices[j] = indices[j - 1] + 1;
+                    }
+                }
+            }
+            
+            return subCombos;
+        }
+
+        // 检查两个组合是否完全相同（长度相同且元素相同）
+        function isSameCombo(combo1, combo2) {
+            if (combo1.length !== combo2.length) return false;
+            return combo1.every((num, idx) => num === combo2[idx]);
+        }
+
+        // 检查combo是否应该被剔除（与任何一个过滤子组合完全匹配）
+        function isFiltered(combo, allSubCombos) {
+            return allSubCombos.some(subCombo => isSameCombo(combo, subCombo));
+        }
+
+        // 创建 Web Worker 代码
+        function createWorkerCode() {
+            return `
+                // 检查两个组合是否完全相同
+                function isSameCombo(combo1, combo2) {
+                    if (combo1.length !== combo2.length) return false;
+                    return combo1.every((num, idx) => num === combo2[idx]);
+                }
+
+                // 检查combo是否应该被剔除（完全匹配）
+                function isFiltered(combo, allSubCombos) {
+                    return allSubCombos.some(subCombo => isSameCombo(combo, subCombo));
+                }
+
+                self.onmessage = function(e) {
+                    const { combos, allSubCombos, size, totalSizes } = e.data;
+                    const validCombos = [];
+                    const filteredCombos = [];
+                    const total = combos.length;
+                    let lastProgress = 0;
+                    
+                    for (let i = 0; i < combos.length; i++) {
+                        const c = combos[i];
+                        if (isFiltered(c, allSubCombos)) {
+                            filteredCombos.push(c);
+                        } else {
+                            validCombos.push(c);
+                        }
+                        
+                        // 每处理1000个或进度变化5%时报告进度
+                        const progress = Math.floor((i + 1) / total * 100);
+                        if (progress >= lastProgress + 5 || i === total - 1) {
+                            lastProgress = progress;
+                            self.postMessage({
+                                type: 'progress',
+                                size: size,
+                                progress: progress,
+                                current: i + 1,
+                                total: total
+                            });
+                        }
+                    }
+                    
+                    self.postMessage({
+                        type: 'result',
+                        size: size,
+                        validCombos: validCombos,
+                        filteredCombos: filteredCombos
+                    });
+                };
+            `;
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            const filterBtn = document.getElementById('filterBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            
+            if (show) {
+                overlay.classList.add('show');
+                filterBtn.style.display = 'none';
+                cancelBtn.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+                filterBtn.style.display = 'block';
+                cancelBtn.classList.remove('show');
+            }
+        }
+
+        function updateProgress(text) {
+            document.getElementById('loadingProgress').textContent = text;
+        }
+
+        function cancelFilter() {
+            if (filterWorker) {
+                filterWorker.terminate();
+                filterWorker = null;
+            }
+            isFiltering = false;
+            showLoading(false);
         }
 
         function filterCombos() {
-            filteredSets = parseFilterInput();
+            if (isFiltering) return;
             
+            const filterSets = parseFilterInput();
+            
+            // 为每一组输入生成所有子组合
+            let allSubCombos = [];
+            filterSets.forEach(set => {
+                const subCombos = generateSubCombos(set);
+                allSubCombos = allSubCombos.concat(subCombos);
+            });
+            
+            // 去重子组合
+            const uniqueSubCombos = [];
+            const seen = new Set();
+            allSubCombos.forEach(combo => {
+                const key = combo.join(',');
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueSubCombos.push(combo);
+                }
+            });
+            
+            filteredSets = uniqueSubCombos;
+            
+            // 计算总组合数
+            const totalCombos = allCombos[2].length + allCombos[3].length + allCombos[4].length + allCombos[5].length;
+            
+            // 如果组合数较少，直接同步计算
+            if (totalCombos < 5000 || uniqueSubCombos.length === 0) {
+                filterCombosSync();
+                return;
+            }
+            
+            // 使用 Web Worker 异步计算
+            filterCombosAsync(uniqueSubCombos);
+        }
+
+        function filterCombosSync() {
             let html = '';
             
             [2, 3, 4, 5].forEach(size => {
@@ -685,6 +919,115 @@
                     html += `<div class="btn-row">`;
                     if (combos.length > 10) {
                         html += `<button class="more-btn" onclick="showDetail(${size})">更多 (${combos.length - 10})</button>`;
+                    }
+                    html += `<button class="copy-btn" onclick="copyValidCombos(${size})">复制有效组合</button></div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            document.getElementById('comboResult').innerHTML = html;
+        }
+
+        function filterCombosAsync(allSubCombos) {
+            isFiltering = true;
+            showLoading(true);
+            
+            const results = {};
+            let completedSizes = 0;
+            const sizes = [2, 3, 4, 5];
+            let currentSizeIndex = 0;
+            
+            function processNextSize() {
+                if (currentSizeIndex >= sizes.length) {
+                    // 所有大小都处理完成
+                    isFiltering = false;
+                    showLoading(false);
+                    renderFilterResults(results);
+                    return;
+                }
+                
+                const size = sizes[currentSizeIndex];
+                const combos = allCombos[size];
+                
+                if (combos.length === 0) {
+                    results[size] = { validCombos: [], filteredCombos: [] };
+                    currentSizeIndex++;
+                    processNextSize();
+                    return;
+                }
+                
+                updateProgress(`正在处理 ${size}中${size} 组合 (0/${combos.length})...`);
+                
+                // 创建 Worker
+                const blob = new Blob([createWorkerCode()], { type: 'application/javascript' });
+                const workerUrl = URL.createObjectURL(blob);
+                filterWorker = new Worker(workerUrl);
+                
+                filterWorker.onmessage = function(e) {
+                    const data = e.data;
+                    
+                    if (data.type === 'progress') {
+                        updateProgress(`正在处理 ${data.size}中${data.size} 组合 (${data.current}/${data.total}) ${data.progress}%`);
+                    } else if (data.type === 'result') {
+                        results[data.size] = {
+                            validCombos: data.validCombos,
+                            filteredCombos: data.filteredCombos
+                        };
+                        
+                        URL.revokeObjectURL(workerUrl);
+                        filterWorker = null;
+                        currentSizeIndex++;
+                        
+                        // 使用 setTimeout 让 UI 有机会更新
+                        setTimeout(processNextSize, 10);
+                    }
+                };
+                
+                filterWorker.onerror = function(error) {
+                    console.error('Worker error:', error);
+                    URL.revokeObjectURL(workerUrl);
+                    filterWorker = null;
+                    isFiltering = false;
+                    showLoading(false);
+                    // 回退到同步处理
+                    filterCombosSync();
+                };
+                
+                filterWorker.postMessage({
+                    combos: combos,
+                    allSubCombos: allSubCombos,
+                    size: size
+                });
+            }
+            
+            processNextSize();
+        }
+
+        function renderFilterResults(results) {
+            let html = '';
+            
+            [2, 3, 4, 5].forEach(size => {
+                const { validCombos, filteredCombos } = results[size] || { validCombos: [], filteredCombos: [] };
+                const sortedCombos = [...validCombos, ...filteredCombos];
+                
+                html += `<div class="combo-section">
+                    <div class="combo-title">${size === 2 ? '二' : size === 3 ? '三' : size === 4 ? '四' : '五'}中${size === 2 ? '二' : size === 3 ? '三' : size === 4 ? '四' : '五'}</div>
+                    <div class="combo-stats">有效组数: <span class="stat-valid">${validCombos.length}</span> | 已剔除组数: <span class="stat-filtered">${filteredCombos.length}</span></div>
+                    <div class="combo-list">`;
+                
+                const displayCombos = sortedCombos.slice(0, 10);
+                displayCombos.forEach(combo => {
+                    const isF = filteredCombos.some(fc => fc.join(',') === combo.join(','));
+                    html += `<div class="combo-item ${isF ? 'filtered' : ''}">${formatNums(combo)}</div>`;
+                });
+                
+                html += `</div>`;
+                
+                if (allCombos[size].length > 0) {
+                    html += `<div class="btn-row">`;
+                    if (allCombos[size].length > 10) {
+                        html += `<button class="more-btn" onclick="showDetail(${size})">更多 (${allCombos[size].length - 10})</button>`;
                     }
                     html += `<button class="copy-btn" onclick="copyValidCombos(${size})">复制有效组合</button></div>`;
                 }
