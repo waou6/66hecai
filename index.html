@@ -48,7 +48,7 @@
         
         .number-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 12px;
             margin-bottom: 30px;
         }
@@ -96,7 +96,45 @@
         .btn-group {
             display: flex;
             gap: 12px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .btn-group-main {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .btn-group-main .analyze-btn {
+            flex: 3;
+        }
+        
+        .btn-group-main .clear-btn {
+            flex: 1;
+        }
+        
+        .btn-group-recommend {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .btn-group-sub {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .btn-group-sub .back-btn {
+            flex: 2;
+            padding: 12px;
+            font-size: 16px;
+        }
+        
+        .btn-group-sub .clear-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
         }
         
         .analyze-btn, .recommend-btn, .back-btn, .filter-btn, .more-btn, .clear-btn {
@@ -386,8 +424,12 @@
                 font-size: 15px;
             }
             
-            .btn-group {
-                flex-direction: column;
+            .btn-group-main {
+                flex-direction: row;
+            }
+            
+            .btn-group-sub {
+                flex-direction: row;
             }
         }
     </style>
@@ -400,10 +442,13 @@
             
             <div class="number-grid" id="numberGrid"></div>
             
-            <div class="btn-group">
+            <div class="btn-group-main">
                 <button class="analyze-btn" onclick="analyze()">分析</button>
-                <button class="recommend-btn" onclick="showRecommend()">选数推荐</button>
                 <button class="clear-btn" onclick="clearSelection()">清空</button>
+            </div>
+            
+            <div class="btn-group">
+                <button class="recommend-btn" onclick="showRecommend()">选数推荐</button>
             </div>
             
             <div class="result" id="result"></div>
@@ -419,10 +464,13 @@
             
             <textarea class="filter-input" id="filterInput" placeholder="输入要剔除的数字组合，用空格或逗号分隔，每行一个组合&#10;例如：&#10;1 2 3&#10;4,5,6"></textarea>
             
-            <div class="btn-group">
-                <button class="back-btn" onclick="backToMain()">返回</button>
+            <div class="btn-group-recommend">
                 <button class="filter-btn" id="filterBtn" onclick="filterCombos()">剔除分析</button>
                 <button class="cancel-btn" id="cancelBtn" onclick="cancelFilter()">取消</button>
+            </div>
+            
+            <div class="btn-group-sub">
+                <button class="back-btn" onclick="backToMain()">返回</button>
                 <button class="clear-btn" onclick="clearFilter()">清空</button>
             </div>
             
