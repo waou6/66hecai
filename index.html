@@ -462,7 +462,7 @@
                 <div id="selectedNumbers"></div>
             </div>
             
-            <textarea class="filter-input" id="filterInput" placeholder="输入要剔除的数字组合，用空格或逗号分隔，每行一个组合&#10;例如：&#10;1 2 3&#10;4,5,6"></textarea>
+            <textarea class="filter-input" id="filterInput" placeholder="输入要剔除的数字组合，用空格或逗号分隔，每行一个组合&#10;例如：&#10;1 2 3&#10;6,4 8.1，7"></textarea>
             
             <div class="btn-group-recommend">
                 <button class="filter-btn" id="filterBtn" onclick="filterCombos()">剔除分析</button>
@@ -760,7 +760,7 @@
             const sets = [];
             
             lines.forEach(line => {
-                const cleaned = line.trim().replace(/\s+/g, ' ').replace(/,/g, ' ');
+                const cleaned = line.trim().replace(/[,\.，]/g, ' ').replace(/\s+/g, ' ');   // 将逗号、句点、中文逗号统一替换为空格
                 if (cleaned) {
                     const nums = cleaned.split(' ').map(n => parseInt(n)).filter(n => !isNaN(n) && n >= 1 && n <= 49);
                     if (nums.length > 0) {
